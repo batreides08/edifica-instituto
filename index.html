@@ -322,11 +322,24 @@ async function post(payload){
   await fetch(SHEET_API_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) });
 }
 
+/* Lectura por JSONP (etiqueta <script>): no la afectan las restricciones CORS de Apps Script. */
+function loadJSONP(){
+  return new Promise((resolve, reject)=>{
+    const cb = "edificaCb_" + Date.now() + Math.floor(Math.random()*1000);
+    const s = document.createElement("script");
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error("Tiempo agotado al leer la hoja")); }, 12000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = data => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("No se pudo cargar la hoja")); };
+    s.src = SHEET_API_URL + "?callback=" + cb + "&t=" + Date.now();
+    document.body.appendChild(s);
+  });
+}
+
 const DB = {
   async load(){
     if(!LIVE) return structuredClone(demo.teachers);
-    const res = await fetch(SHEET_API_URL);
-    const data = await res.json();
+    const data = await loadJSONP();
     return data.teachers || [];
   },
   async addTeacher(t){
