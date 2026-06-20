@@ -36,10 +36,10 @@
   /* ---------- Header ---------- */
   header{position:sticky;top:0;z-index:30;background:rgba(244,248,252,.85);
     backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--line)}
-  .bar{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:72px}
   .logo{display:flex;align-items:center}
-  .logo img{height:38px;width:auto;display:block}
-  @media(min-width:680px){.logo img{height:44px}}
+  .logo img{height:48px;width:auto;display:block}
+  @media(min-width:680px){.logo img{height:58px}}
   .btn{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:15px;
     padding:11px 16px;border-radius:12px;transition:transform .12s ease, box-shadow .12s ease, background .12s}
   .btn:active{transform:translateY(1px)}
@@ -54,7 +54,10 @@
   .hero::before{content:"";position:absolute;inset:-40% -20% auto -20%;height:340px;z-index:-1;
     background:radial-gradient(60% 100% at 50% 0%, #FEF3D2 0%, rgba(227,241,251,.75) 42%, rgba(244,248,252,0) 72%)}
   .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;
-    color:var(--primary);background:var(--primary-soft);padding:6px 13px;border-radius:999px;margin-bottom:16px}
+    color:var(--primary);background:var(--primary-soft);padding:6px 13px;border-radius:999px}
+  .inspired{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px}
+  .manual-cover{width:172px;max-width:48vw;height:auto;border-radius:12px;
+    box-shadow:0 14px 34px rgba(22,36,63,.26);border:3px solid #fff}
   .hero h1{font-size:clamp(30px,7vw,46px);line-height:1.05}
   .hero h1 .lit{background:linear-gradient(120deg,var(--gold-deep),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
   .hero p{max-width:520px;margin:14px auto 0;color:var(--ink-soft);font-size:17px}
@@ -189,7 +192,10 @@
 
 <main class="wrap">
   <section class="hero">
-    <span class="eyebrow">✦ Inspirado en <em>Enseñar a la manera del Salvador</em></span>
+    <div class="inspired">
+      <span class="eyebrow">Inspirado en:</span>
+      <img class="manual-cover" src="manual.jpg" alt="Manual: Enseñar a la manera del Salvador" />
+    </div>
     <h1>Que cada clase de Instituto <span class="lit">edifique</span></h1>
     <p>Califica a tus maestros de forma anónima. Tus respuestas ayudan a que la enseñanza mejore, clase por clase.</p>
 
