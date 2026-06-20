@@ -315,10 +315,11 @@ function seed(name,clase,barrio,count,avgs,comments){
     comments:(comments||[]).map(t=>({texto:t,createdAt:new Date().toISOString()})) };
 }
 
-/* POST sin cabeceras personalizadas: así es "simple request" y evita el bloqueo CORS de Apps Script */
+/* Apps Script no deja leer la respuesta de un POST desde otro origen (CORS).
+   Con mode:"no-cors" el navegador SÍ envía la petición y la hoja se actualiza;
+   luego confirmamos el resultado releyendo la hoja con GET. */
 async function post(payload){
-  const res = await fetch(SHEET_API_URL, { method:"POST", body: JSON.stringify(payload) });
-  return res.json();
+  await fetch(SHEET_API_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) });
 }
 
 const DB = {
@@ -331,8 +332,7 @@ const DB = {
   async addTeacher(t){
     if(!LIVE){ const id="d"+Math.random().toString(36).slice(2,8);
       demo.teachers.push({ id, ...t, count:0, sums:blankSums(), comments:[] }); return id; }
-    const r = await post({ action:"addTeacher", ...t });
-    return r.id;
+    await post({ action:"addTeacher", ...t });
   },
   async rate(id, scores, comment){
     if(!LIVE){
@@ -443,11 +443,18 @@ $("#submitRating").addEventListener("click", async e=>{
   if(Object.keys(draft).length !== DIMS.length) return;
   e.target.disabled = true; e.target.textContent = "Enviando…";
   try{
+    const prev = current.count;
     await DB.rate(current.id, draft, $("#rComment").value.trim());
+    await new Promise(r=>setTimeout(r,500));     // dar tiempo a que la hoja refleje
     teachers = await DB.load();
-    close($("#detailOverlay")); render(); toast("¡Gracias! Tu calificación ayuda a mejorar las clases.");
-  }catch(err){ toast("No se pudo enviar. Revisa tu conexión."); console.error(err);
-  } finally { e.target.textContent = "Enviar calificación"; }
+    const now = teachers.find(t=>t.id===current.id);
+    if(now && now.count > prev){
+      close($("#detailOverlay")); render(); toast("¡Gracias! Tu calificación ayuda a mejorar las clases.");
+    } else {
+      toast("No se guardó. Revisa la implementación del Apps Script.");
+    }
+  }catch(err){ toast("Error de conexión con la hoja."); console.error(err);
+  } finally { e.target.disabled = false; e.target.textContent = "Enviar calificación"; }
 });
 
 /* Add teacher */
@@ -457,11 +464,17 @@ $("#submitTeacher").addEventListener("click", async e=>{
   if(!name||!clase||!barrio){ toast("Completa los tres campos."); return; }
   e.target.disabled=true;
   try{
+    const before = teachers.length;
     await DB.addTeacher({name,clase,barrio});
+    await new Promise(r=>setTimeout(r,500));     // dar tiempo a que la hoja refleje
     teachers = await DB.load();
-    $("#aName").value=$("#aClase").value=$("#aBarrio").value="";
-    close($("#addOverlay")); render(); toast("Maestro agregado. ¡Ya puedes calificarlo!");
-  }catch(err){ toast("No se pudo agregar."); console.error(err); }
+    if(teachers.length > before){
+      $("#aName").value=$("#aClase").value=$("#aBarrio").value="";
+      close($("#addOverlay")); render(); toast("Maestro agregado. ¡Ya puedes calificarlo!");
+    } else {
+      toast("No se guardó. Revisa que el Apps Script tenga acceso 'Cualquier usuario'.");
+    }
+  }catch(err){ toast("Error de conexión con la hoja."); console.error(err); }
   finally{ e.target.disabled=false; }
 });
 
@@ -488,7 +501,11 @@ function timeAgo(d){
 
 /* init */
 if(!LIVE) $("#demoBanner").classList.add("on");
-(async()=>{ teachers = await DB.load(); render(); })();
+(async()=>{
+  try{ teachers = await DB.load(); }
+  catch(err){ console.error(err); toast("No se pudo leer la hoja. Revisa la URL y el acceso del Apps Script."); }
+  render();
+})();
 </script>
 </body>
 </html>
