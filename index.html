@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Edifica · Califica a tus maestros de Instituto</title>
+<title>Califica mi Instituto · Califica a tus maestros</title>
 <meta name="description" content="Califica a tus maestros de Instituto según los principios de Enseñar a la manera del Salvador y ayuda a que las clases mejoren." />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --ink:#181A2F; --ink-soft:#5A5D7A; --bg:#F6F7FB; --surface:#FFFFFF;
-    --primary:#4B43D6; --primary-2:#7C6CF0; --primary-soft:#ECEAFF;
-    --gold:#FFB020; --gold-deep:#F59300; --gold-soft:#FFF3D6;
-    --mint:#16B89A; --line:#E7E8F2; --danger:#E5484D;
+    --ink:#16243F; --ink-soft:#5A6B86; --bg:#F4F8FC; --surface:#FFFFFF;
+    --primary:#1C4486; --primary-2:#2BA9E1; --primary-soft:#E3F1FB;
+    --gold:#F2B616; --gold-deep:#D8920A; --gold-soft:#FEF3D2;
+    --mint:#62B23A; --line:#E2E8F2; --danger:#E5484D;
     --r:18px; --r-sm:12px;
-    --shadow:0 1px 2px rgba(24,26,47,.06), 0 8px 24px rgba(24,26,47,.06);
-    --shadow-lg:0 12px 40px rgba(75,67,214,.16);
+    --shadow:0 1px 2px rgba(22,36,63,.06), 0 8px 24px rgba(22,36,63,.07);
+    --shadow-lg:0 12px 40px rgba(28,68,134,.18);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -32,26 +34,25 @@
   .wrap{max-width:980px;margin:0 auto;padding:0 18px}
 
   /* ---------- Header ---------- */
-  header{position:sticky;top:0;z-index:30;background:rgba(246,247,251,.82);
+  header{position:sticky;top:0;z-index:30;background:rgba(244,248,252,.85);
     backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--line)}
   .bar{display:flex;align-items:center;justify-content:space-between;height:62px}
-  .logo{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:19px}
-  .spark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
-    background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-size:16px;
-    box-shadow:0 4px 14px rgba(75,67,214,.4)}
+  .logo{display:flex;align-items:center}
+  .logo img{height:38px;width:auto;display:block}
+  @media(min-width:680px){.logo img{height:44px}}
   .btn{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:15px;
     padding:11px 16px;border-radius:12px;transition:transform .12s ease, box-shadow .12s ease, background .12s}
   .btn:active{transform:translateY(1px)}
   .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;
-    box-shadow:0 6px 18px rgba(75,67,214,.32)}
-  .btn-primary:hover{box-shadow:0 8px 22px rgba(75,67,214,.42)}
-  .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
-  .btn-ghost:hover{background:#fff;border-color:#d6d8e8}
+    box-shadow:0 6px 18px rgba(28,68,134,.30)}
+  .btn-primary:hover{box-shadow:0 8px 22px rgba(28,68,134,.40)}
+  .btn-ghost{background:var(--surface);color:var(--primary);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .btn-ghost:hover{background:#fff;border-color:#cdd9ea}
 
   /* ---------- Hero ---------- */
   .hero{position:relative;padding:42px 0 26px;text-align:center}
   .hero::before{content:"";position:absolute;inset:-40% -20% auto -20%;height:340px;z-index:-1;
-    background:radial-gradient(60% 100% at 50% 0%, #FFF3D6 0%, rgba(236,234,255,.7) 42%, rgba(246,247,251,0) 72%)}
+    background:radial-gradient(60% 100% at 50% 0%, #FEF3D2 0%, rgba(227,241,251,.75) 42%, rgba(244,248,252,0) 72%)}
   .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;
     color:var(--primary);background:var(--primary-soft);padding:6px 13px;border-radius:999px;margin-bottom:16px}
   .hero h1{font-size:clamp(30px,7vw,46px);line-height:1.05}
@@ -181,7 +182,7 @@
 
 <header>
   <div class="wrap bar">
-    <div class="logo"><span class="spark">✦</span> Edifica</div>
+    <div class="logo"><img src="logo.png" alt="Califica mi Instituto" /></div>
     <button class="btn btn-ghost" id="openAdd">＋ Maestro</button>
   </div>
 </header>
