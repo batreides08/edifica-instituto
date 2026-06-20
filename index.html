@@ -198,7 +198,7 @@
     </div>
 
     <div class="demo" id="demoBanner">
-      <b>Modo demostración.</b> Las calificaciones no se guardan todavía. Conecta tu base de datos (Firebase) siguiendo las instrucciones para que sea real y compartida.
+      <b>Modo demostración.</b> Las calificaciones no se guardan todavía. Conecta tu Google Sheet (con Apps Script) pegando la URL en el código para que sea real y compartida.
     </div>
   </section>
 
@@ -275,23 +275,11 @@
 </footer>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, increment,
-         query, orderBy, limit, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 /* ============================================================
-   1) CONFIGURA AQUÍ TU FIREBASE  (déjalo vacío para modo demo)
-   Pega el objeto que te da Firebase: Configuración del proyecto.
+   1) PEGA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT  (déjala vacía = modo demo)
+   Es la URL que termina en /exec que te da al "Implementar > App web".
 ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
-};
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwsXYoSXxN6LdBls9e6UE8xQ7ois7oJ4FF14ee3Mzofp-WABXiVPcZXTv0K_wcWHDBg/exec";
 
 /* Dimensiones del manual (orden fijo = orden en la base) */
 const DIMS = [
@@ -303,61 +291,57 @@ const DIMS = [
   { key:"edifica",  label:"Salí edificado/a de la clase" },
 ];
 
-const LIVE = !!FIREBASE_CONFIG.projectId;
-let db = null;
-if (LIVE) db = getFirestore(initializeApp(FIREBASE_CONFIG));
+const LIVE = !!SHEET_API_URL;
 
 /* ============================================================
-   2) CAPA DE DATOS  (Firebase real  ó  demo en memoria)
+   2) CAPA DE DATOS  (Google Sheets vía Apps Script  ó  demo en memoria)
 ============================================================ */
 const blankSums = () => Object.fromEntries(DIMS.map(d => [d.key, 0]));
 
 const demo = {
   teachers: [
-    seed("Hna. Ana Jiménez","Jesucristo y el Evangelio Sempiterno","Barrio Guápiles",18,[4.8,4.9,4.7,4.6,4.5,4.8]),
-    seed("Hno. David Mora","Fundamentos de la Restauración","Barrio Guápiles",11,[4.2,3.9,4.0,4.4,3.8,4.1]),
-    seed("Hna. Raquel Soto","La Familia Eterna","Estaca Limón",7,[4.6,4.8,4.5,4.3,4.6,4.7]),
-    seed("Hno. Esteban Vargas","Doctrina y Convenios","Barrio Pococí",4,[3.6,3.4,3.7,4.1,3.3,3.5]),
-  ],
-  comments: {}
+    seed("Hna. Ana Jiménez","Jesucristo y el Evangelio Sempiterno","Barrio Guápiles",18,[4.8,4.9,4.7,4.6,4.5,4.8],
+      ["Sus clases siempre me dejan con ganas de leer las Escrituras.","Se nota que prepara cada lección con cariño."]),
+    seed("Hno. David Mora","Fundamentos de la Restauración","Barrio Guápiles",11,[4.2,3.9,4.0,4.4,3.8,4.1],
+      ["Explica muy claro, podría darnos más tiempo para participar."]),
+    seed("Hna. Raquel Soto","La Familia Eterna","Estaca Limón",7,[4.6,4.8,4.5,4.3,4.6,4.7],[]),
+    seed("Hno. Esteban Vargas","Doctrina y Convenios","Barrio Pococí",4,[3.6,3.4,3.7,4.1,3.3,3.5],[]),
+  ]
 };
-function seed(name,clase,barrio,count,avgs){
+function seed(name,clase,barrio,count,avgs,comments){
   const sums = blankSums();
   DIMS.forEach((d,i)=> sums[d.key] = Math.round(avgs[i]*count));
-  return { id:"d"+Math.random().toString(36).slice(2,8), name, clase, barrio, count, sums };
+  return { id:"d"+Math.random().toString(36).slice(2,8), name, clase, barrio, count, sums,
+    comments:(comments||[]).map(t=>({texto:t,createdAt:new Date().toISOString()})) };
+}
+
+/* POST sin cabeceras personalizadas: así es "simple request" y evita el bloqueo CORS de Apps Script */
+async function post(payload){
+  const res = await fetch(SHEET_API_URL, { method:"POST", body: JSON.stringify(payload) });
+  return res.json();
 }
 
 const DB = {
-  async list(){
+  async load(){
     if(!LIVE) return structuredClone(demo.teachers);
-    const snap = await getDocs(collection(db,"teachers"));
-    return snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const res = await fetch(SHEET_API_URL);
+    const data = await res.json();
+    return data.teachers || [];
   },
   async addTeacher(t){
     if(!LIVE){ const id="d"+Math.random().toString(36).slice(2,8);
-      demo.teachers.push({ id, ...t, count:0, sums:blankSums() }); return id; }
-    const ref = await addDoc(collection(db,"teachers"),
-      { ...t, count:0, sums:blankSums(), createdAt:serverTimestamp() });
-    return ref.id;
-  },
-  async comments(id){
-    if(!LIVE) return (demo.comments[id]||[]).slice().reverse();
-    const snap = await getDocs(query(collection(db,"teachers",id,"comentarios"),
-      orderBy("createdAt","desc"), limit(20)));
-    return snap.docs.map(d=>d.data());
+      demo.teachers.push({ id, ...t, count:0, sums:blankSums(), comments:[] }); return id; }
+    const r = await post({ action:"addTeacher", ...t });
+    return r.id;
   },
   async rate(id, scores, comment){
     if(!LIVE){
       const t = demo.teachers.find(x=>x.id===id); t.count++;
       DIMS.forEach(d=> t.sums[d.key]+=scores[d.key]);
-      if(comment){ (demo.comments[id]=demo.comments[id]||[]).push({texto:comment,createdAt:new Date()}); }
+      if(comment) t.comments.unshift({ texto:comment, createdAt:new Date().toISOString() });
       return;
     }
-    const upd = { count:increment(1) };
-    DIMS.forEach(d=> upd["sums."+d.key]=increment(scores[d.key]));
-    await updateDoc(doc(db,"teachers",id), upd);
-    if(comment) await addDoc(collection(db,"teachers",id,"comentarios"),
-      { texto:comment, createdAt:serverTimestamp() });
+    await post({ action:"rate", id, scores, comment });
   }
 };
 
@@ -447,13 +431,12 @@ async function openDetail(id){
     });
   });
 
-  $("#dComments").innerHTML = `<div class="empty">Cargando…</div>`;
-  open($("#detailOverlay"));
-  const cs = await DB.comments(id);
+  const cs = current.comments || [];
   $("#dComments").innerHTML = cs.length ? cs.map(c=>{
-    const d = c.createdAt?.toDate ? c.createdAt.toDate() : new Date(c.createdAt||Date.now());
+    const d = new Date(c.createdAt || Date.now());
     return `<div class="comment">${esc(c.texto)}<div class="when">${timeAgo(d)}</div></div>`;
   }).join("") : `<div class="empty">Aún no hay comentarios. ¡Sé el primero!</div>`;
+  open($("#detailOverlay"));
 }
 
 $("#submitRating").addEventListener("click", async e=>{
@@ -461,7 +444,7 @@ $("#submitRating").addEventListener("click", async e=>{
   e.target.disabled = true; e.target.textContent = "Enviando…";
   try{
     await DB.rate(current.id, draft, $("#rComment").value.trim());
-    teachers = await DB.list();
+    teachers = await DB.load();
     close($("#detailOverlay")); render(); toast("¡Gracias! Tu calificación ayuda a mejorar las clases.");
   }catch(err){ toast("No se pudo enviar. Revisa tu conexión."); console.error(err);
   } finally { e.target.textContent = "Enviar calificación"; }
@@ -475,7 +458,7 @@ $("#submitTeacher").addEventListener("click", async e=>{
   e.target.disabled=true;
   try{
     await DB.addTeacher({name,clase,barrio});
-    teachers = await DB.list();
+    teachers = await DB.load();
     $("#aName").value=$("#aClase").value=$("#aBarrio").value="";
     close($("#addOverlay")); render(); toast("Maestro agregado. ¡Ya puedes calificarlo!");
   }catch(err){ toast("No se pudo agregar."); console.error(err); }
@@ -505,7 +488,7 @@ function timeAgo(d){
 
 /* init */
 if(!LIVE) $("#demoBanner").classList.add("on");
-(async()=>{ teachers = await DB.list(); render(); })();
+(async()=>{ teachers = await DB.load(); render(); })();
 </script>
 </body>
 </html>
