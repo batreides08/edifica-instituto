@@ -94,7 +94,7 @@
   .card .clase{color:var(--ink-soft);font-size:14px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--primary);
     background:var(--primary-soft);padding:4px 9px;border-radius:999px;margin-top:10px}
-  .minibars{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:13px}
+  .minibars{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:13px}
   .minibars .b{height:5px;border-radius:3px;background:var(--line);overflow:hidden}
   .minibars .b i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary),var(--primary-2))}
   .reviews{font-size:12.5px;color:var(--ink-soft);margin-top:10px}
@@ -141,7 +141,14 @@
   .scale button:hover{border-color:var(--gold)}
   .scale button.sel{background:linear-gradient(135deg,var(--gold),var(--gold-deep));border-color:transparent;color:#fff;
     box-shadow:0 5px 14px rgba(245,147,0,.35)}
-  .scale-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:6px}
+  .scale-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:6px;gap:8px}
+  .rate-intro{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:8px}
+  .rate-intro p{margin:0 0 10px;font-size:13.5px;color:var(--ink-soft)}
+  .scale-key{display:flex;flex-wrap:wrap;gap:6px}
+  .scale-key span{font-size:11px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+  .scale-key b{color:var(--gold-deep);margin-right:3px}
+  .rate-sub{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--primary);margin:18px 0 2px}
+  .qn{color:var(--ink-soft);font-weight:700;margin-right:2px}
 
   textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical;min-height:80px;color:var(--ink);outline:none}
   textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
@@ -279,38 +286,66 @@
    1) PEGA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT  (déjala vacía = modo demo)
    Es la URL que termina en /exec que te da al "Implementar > App web".
 ============================================================ */
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwsXYoSXxN6LdBls9e6UE8xQ7ois7oJ4FF14ee3Mzofp-WABXiVPcZXTv0K_wcWHDBg/exec";
+const SHEET_API_URL = "";
 
-/* Dimensiones del manual (orden fijo = orden en la base) */
-const DIMS = [
-  { key:"cristo",   label:"Centra la clase en Jesucristo" },
-  { key:"amor",     label:"Crea un ambiente de amor y confianza" },
-  { key:"espiritu", label:"Invita al Espíritu" },
-  { key:"doctrina", label:"Enseña la doctrina con las Escrituras" },
-  { key:"participa",label:"Me hace participar y aplicar lo aprendido" },
-  { key:"edifica",  label:"Salí edificado/a de la clase" },
+/* Las 15 preguntas, agrupadas por dimensión del manual.
+   El orden q1..q15 DEBE coincidir con las columnas de la hoja. */
+const QUESTIONS = [
+  { key:"q1",  dim:"cristo",    text:"Sin importar el tema, el maestro me ayuda a ver cómo se relaciona con Jesucristo." },
+  { key:"q2",  dim:"cristo",    text:"Las clases despiertan en mí el deseo de acercarme más al Salvador." },
+  { key:"q3",  dim:"amor",      text:"El maestro se interesa por mí de forma genuina (me saluda, pregunta cómo estoy)." },
+  { key:"q4",  dim:"amor",      text:"En la clase me siento en un ambiente seguro donde puedo participar sin miedo a ser juzgado." },
+  { key:"q5",  dim:"espiritu",  text:"Durante la clase siento la influencia del Espíritu Santo." },
+  { key:"q6",  dim:"espiritu",  text:"El maestro comparte su testimonio de las verdades que enseña." },
+  { key:"q7",  dim:"doctrina",  text:"El maestro enseña usando las Escrituras y las palabras de los profetas." },
+  { key:"q8",  dim:"doctrina",  text:"Las explicaciones me ayudan a entender mejor el Evangelio y aplicarlo a mi vida." },
+  { key:"q9",  dim:"participa", text:"El maestro me invita a participar activamente (preguntas, comentarios, debates)." },
+  { key:"q10", dim:"participa", text:"El maestro me invita a poner en práctica lo que aprendo." },
+  { key:"q11", dim:"prepara",   text:"El maestro llega preparado y aprovecha bien el tiempo de clase." },
+  { key:"q12", dim:"edifica",   text:"Salgo de las clases sintiéndome edificado/a espiritualmente." },
+  { key:"q13", dim:"edifica",   text:"Mi fe en Jesucristo ha aumentado gracias a estas clases." },
+  { key:"q14", dim:"edifica",   text:"Lo que aprendo me ayuda a tomar mejores decisiones en mi vida diaria." },
+  { key:"q15", dim:"edifica",   text:"Estas clases aumentan mi deseo de guardar mis convenios." },
 ];
+
+/* Dimensiones para mostrar promedios agrupados (orden = orden de seed) */
+const DIMS = [
+  { key:"cristo",    label:"Centrarse en Jesucristo" },
+  { key:"amor",      label:"Amar a quienes enseña" },
+  { key:"espiritu",  label:"Enseñar por el Espíritu" },
+  { key:"doctrina",  label:"Enseñar la doctrina" },
+  { key:"participa", label:"Fomentar el aprendizaje" },
+  { key:"prepara",   label:"Preparación y enfoque" },
+  { key:"edifica",   label:"Edificación (resultado)" },
+];
+
+/* Escala de acuerdo 1–5 */
+const SCALE = ["Totalmente en desacuerdo","En desacuerdo","Neutral","De acuerdo","Totalmente de acuerdo"];
+const RESULT_START = "q12"; // primera pregunta de la sección de resultados
 
 const LIVE = !!SHEET_API_URL;
 
 /* ============================================================
    2) CAPA DE DATOS  (Google Sheets vía Apps Script  ó  demo en memoria)
 ============================================================ */
-const blankSums = () => Object.fromEntries(DIMS.map(d => [d.key, 0]));
+const blankSums = () => Object.fromEntries(QUESTIONS.map(q => [q.key, 0]));
 
 const demo = {
   teachers: [
-    seed("Hna. Ana Jiménez","Jesucristo y el Evangelio Sempiterno","Barrio Guápiles",18,[4.8,4.9,4.7,4.6,4.5,4.8],
+    seed("Hna. Ana Jiménez","Jesucristo y el Evangelio Sempiterno","Barrio Guápiles",18,[4.8,4.9,4.7,4.6,4.5,4.7,4.8],
       ["Sus clases siempre me dejan con ganas de leer las Escrituras.","Se nota que prepara cada lección con cariño."]),
-    seed("Hno. David Mora","Fundamentos de la Restauración","Barrio Guápiles",11,[4.2,3.9,4.0,4.4,3.8,4.1],
+    seed("Hno. David Mora","Fundamentos de la Restauración","Barrio Guápiles",11,[4.2,3.9,4.0,4.4,3.8,4.1,4.0],
       ["Explica muy claro, podría darnos más tiempo para participar."]),
-    seed("Hna. Raquel Soto","La Familia Eterna","Estaca Limón",7,[4.6,4.8,4.5,4.3,4.6,4.7],[]),
-    seed("Hno. Esteban Vargas","Doctrina y Convenios","Barrio Pococí",4,[3.6,3.4,3.7,4.1,3.3,3.5],[]),
+    seed("Hna. Raquel Soto","La Familia Eterna","Estaca Limón",7,[4.6,4.8,4.5,4.3,4.6,4.6,4.7],[]),
+    seed("Hno. Esteban Vargas","Doctrina y Convenios","Barrio Pococí",4,[3.6,3.4,3.7,4.1,3.3,3.6,3.5],[]),
   ]
 };
-function seed(name,clase,barrio,count,avgs,comments){
+function seed(name,clase,barrio,count,dimAvgs,comments){
   const sums = blankSums();
-  DIMS.forEach((d,i)=> sums[d.key] = Math.round(avgs[i]*count));
+  QUESTIONS.forEach(q=>{
+    const di = DIMS.findIndex(d=>d.key===q.dim);
+    sums[q.key] = Math.round(dimAvgs[di]*count);
+  });
   return { id:"d"+Math.random().toString(36).slice(2,8), name, clase, barrio, count, sums,
     comments:(comments||[]).map(t=>({texto:t,createdAt:new Date().toISOString()})) };
 }
@@ -350,7 +385,7 @@ const DB = {
   async rate(id, scores, comment){
     if(!LIVE){
       const t = demo.teachers.find(x=>x.id===id); t.count++;
-      DIMS.forEach(d=> t.sums[d.key]+=scores[d.key]);
+      QUESTIONS.forEach(q=> t.sums[q.key]+=scores[q.key]);
       if(comment) t.comments.unshift({ texto:comment, createdAt:new Date().toISOString() });
       return;
     }
@@ -364,8 +399,12 @@ const DB = {
 const $ = s => document.querySelector(s);
 let teachers = [], current = null, draft = {};
 
-const overall = t => t.count ? DIMS.reduce((a,d)=>a+t.sums[d.key],0)/(t.count*DIMS.length) : 0;
-const dimAvg  = (t,k) => t.count ? t.sums[k]/t.count : 0;
+const qAvg    = (t,qk) => t.count ? t.sums[qk]/t.count : 0;
+const dimAvg  = (t,dk) => {
+  const qs = QUESTIONS.filter(q=>q.dim===dk);
+  return (t.count && qs.length) ? qs.reduce((a,q)=>a+qAvg(t,q.key),0)/qs.length : 0;
+};
+const overall = t => t.count ? QUESTIONS.reduce((a,q)=>a+qAvg(t,q.key),0)/QUESTIONS.length : 0;
 const fmt     = n => n ? n.toFixed(1) : "—";
 
 function ringHTML(score){
@@ -424,12 +463,19 @@ async function openDetail(id){
       <span class="dv">${fmt(v)}</span></div>`;
   }).join("");
 
-  $("#rateForm").innerHTML = DIMS.map(d=>`
-    <div class="rate-row" data-dim="${d.key}">
-      <div class="q">${d.label}</div>
-      <div class="scale">${[1,2,3,4,5].map(n=>`<button data-v="${n}">${n}</button>`).join("")}</div>
-      <div class="scale-legend"><span>Nada</span><span>Mucho</span></div>
-    </div>`).join("");
+  const scaleKey = SCALE.map((lbl,i)=>`<span><b>${i+1}</b> ${lbl}</span>`).join("");
+  let formHTML = `<div class="rate-intro">
+      <p>Esta encuesta es <b>anónima</b>. No hay respuestas correctas o incorrectas, solo queremos tu opinión sincera. Para cada afirmación, marca qué tan de acuerdo estás:</p>
+      <div class="scale-key">${scaleKey}</div>
+    </div>`;
+  QUESTIONS.forEach((q,i)=>{
+    formHTML += `<div class="rate-row" data-q="${q.key}">
+      <div class="q"><span class="qn">${i+1}.</span> ${q.text}</div>
+      <div class="scale">${[1,2,3,4,5].map(n=>`<button data-v="${n}" aria-label="${SCALE[n-1]}">${n}</button>`).join("")}</div>
+      <div class="scale-legend"><span>${SCALE[0]}</span><span>${SCALE[4]}</span></div>
+    </div>`;
+  });
+  $("#rateForm").innerHTML = formHTML;
   $("#rComment").value = "";
   $("#submitRating").disabled = true;
 
@@ -438,8 +484,8 @@ async function openDetail(id){
       b.addEventListener("click", ()=>{
         row.querySelectorAll(".scale button").forEach(x=>x.classList.remove("sel"));
         b.classList.add("sel");
-        draft[row.dataset.dim] = +b.dataset.v;
-        $("#submitRating").disabled = Object.keys(draft).length !== DIMS.length;
+        draft[row.dataset.q] = +b.dataset.v;
+        $("#submitRating").disabled = Object.keys(draft).length !== QUESTIONS.length;
       });
     });
   });
@@ -453,7 +499,7 @@ async function openDetail(id){
 }
 
 $("#submitRating").addEventListener("click", async e=>{
-  if(Object.keys(draft).length !== DIMS.length) return;
+  if(Object.keys(draft).length !== QUESTIONS.length) return;
   e.target.disabled = true; e.target.textContent = "Enviando…";
   try{
     const prev = current.count;
